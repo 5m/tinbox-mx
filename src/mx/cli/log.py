@@ -26,7 +26,7 @@ def configure(filename, verbose):
         'disable_existing_loggers': False,
         'formatters': {
             'default': {
-                'format': '%(asctime)s %(levelname) 8s >> %(message)s'
+                'format': '%(asctime)s [%(process)d] %(levelname) 8s >> %(message)s'
             },
             'colorized': {
                 '()': 'mx.cli.log.ColorizedFormatter',
