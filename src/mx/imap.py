@@ -33,14 +33,20 @@ class IMAP(imaplib.IMAP4_SSL):
         Subscribes (blocking) for new mail events using IDLE mode.
         Notifying callback when found.
         """
-        self._get_exists_response()  # Ensure no EXISTS present
-
         with self.mailbox(mailbox, readonly=True):
+            count = self._get_exists_response()
+
             for _ in self.idle():
-                exists = self._get_exists_response()
-                if exists:
-                    logger.info("IMAP: \u2709 You've got mail")
+                new_count = self._get_exists_response()
+
+                if new_count:
+                    logger.info("IMAP: \u2709 You've got mail (%+i)", new_count - count)
+                    count = new_count
                     callback()
+                else:
+                    expunge = self._get_expunge_response()
+                    if expunge is not None:
+                        count = expunge
 
     def fetch_unseen(self, mailbox='INBOX', touch=True):
         """
@@ -78,29 +84,46 @@ class IMAP(imaplib.IMAP4_SSL):
 
         :param timeout: IMAP4 RFC says restart IDLE every 29 min
         """
-        tag = self._idle_command()
-        try:
-            while True:
-                ready = select([self.sock], [], [], timeout)
+        while 1:
+            try:
+                tag = self._idle_command()
 
-                if ready[0]:
-                    # Socket got bytes to read
-                    response = self._get_response()
-                    self._check_bye()
-                    if response:
-                        yield response
-                else:
-                    # Timeout
-                    logger.debug('IMAP: idle timeout')
+                timer = 0
+                select_timeout = 1
+                idling = True
+
+                while idling:
+                    ready, _, _ = select([self.file], [], [], select_timeout)
+                    # ready = True
+
+                    if ready:
+                        # Socket got bytes to read
+                        response = self._get_response()
+                        self._check_bye()
+                        if response:
+                            yield response
+                    else:
+                        # Timeout
+                        timer += select_timeout
+                        if timer >= timeout:
+                            logger.debug('IMAP: idle timeout')
+                            idling = False
+
+            finally:
+                if self.state == 'IDLING':
                     self._done_command(tag)
-                    tag = self._idle_command()
-        finally:
-            if self.state == 'IDLING':
-                self._done_command(tag)
 
     def _get_exists_response(self):
         _, exists = self._untagged_response('OK', [None], 'EXISTS')
-        return exists[-1]
+        count = exists[-1]
+        if count:
+            return int(count)
+
+    def _get_expunge_response(self):
+        _, expunge = self._untagged_response('OK', [None], 'EXPUNGE')
+        count = expunge[-1]
+        if count:
+            return int(count)
 
     def _idle_command(self):
         """
