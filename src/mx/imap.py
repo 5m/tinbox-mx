@@ -1,6 +1,9 @@
 import imaplib
 import logging
 import re
+import socket
+import ssl
+import asyncio
 from contextlib import contextmanager, ExitStack
 from select import select
 
@@ -8,6 +11,47 @@ logger = logging.getLogger(__name__)
 
 
 class IMAP(imaplib.IMAP4_SSL):
+
+    def _create_socket(self):
+        # sock = socket.create_connection((self.host, self.port))
+        # server_hostname = self.host if ssl.HAS_SNI else None
+        # return self.ssl_context.wrap_socket(sock,
+        #                                     server_hostname=server_hostname)
+        asyncio.open_connection()
+        sock =  socket.create_connection((self.host, self.port))
+        server_hostname = self.host if ssl.HAS_SNI else None
+        return self.ssl_context.wrap_socket(sock,
+                                            server_hostname=server_hostname)
+
+    def open(self, host='', port=imaplib.IMAP4_SSL_PORT):
+        """Setup connection to remote server on "host:port".
+            (default: localhost:standard IMAP4 SSL port).
+        This connection will be used by the routines:
+            read, readline, send, shutdown.
+        """
+        # imaplib.IMAP4.open(self, host, port)
+        self.host = host
+        self.port = port
+        self.sock = self._create_socket()
+        self.file = self.sock.makefile('rb')
+
+
+    def read(self, size):
+        """Read 'size' bytes from remote."""
+        return self.file.read(size)
+
+
+    def readline(self):
+        """Read line from remote."""
+        line = self.file.readline(imaplib._MAXLINE + 1)
+        if len(line) > imaplib._MAXLINE:
+            raise self.error("got more than %d bytes" % imaplib._MAXLINE)
+        return line
+
+
+    def send(self, data):
+        """Send data to remote."""
+        self.sock.sendall(data)
 
     @contextmanager
     def mailbox(self, name, readonly=False):
@@ -33,13 +77,17 @@ class IMAP(imaplib.IMAP4_SSL):
         Subscribes (blocking) for new mail events using IDLE mode.
         Notifying callback when found.
         """
+        # self._get_exists_response()  # Ensure no EXISTS present
+
         with self.mailbox(mailbox, readonly=True):
             count = self._get_exists_response()
+            logger.debug('current count %s', count)
 
             for _ in self.idle():
                 new_count = self._get_exists_response()
 
                 if new_count:
+                    logger.debug('new count %s', new_count)
                     logger.info("IMAP: \u2709 You've got mail (%+i)", new_count - count)
                     count = new_count
                     callback()
@@ -93,8 +141,8 @@ class IMAP(imaplib.IMAP4_SSL):
             try:
                 tag = self._idle_command()
 
-                timer = 0
-                select_timeout = 1
+                timer = 0.0
+                select_timeout = 0.1
                 idling = True
 
                 while idling:
@@ -110,6 +158,7 @@ class IMAP(imaplib.IMAP4_SSL):
                     else:
                         # Timeout
                         timer += select_timeout
+                        logger.debug('...%s', timer)
                         if timer >= timeout:
                             logger.debug('IMAP: idle timeout')
                             idling = False
