@@ -74,6 +74,14 @@ class IMAP(imaplib.IMAP4_SSL):
                     logger.debug('IMAP: fetched message #%s [UID:%s]', index, uid)
                     yield index, uid, RFC822
 
+    def mark_unseen(self, indices):
+        """
+        Flag message(s) as unseen.
+
+        :param indices: Message sequence number(s) in format: 2,10:12,15 means 2,10,11,12,15
+        """
+        self.store(indices, '-FLAGS.SILENT', '\\Seen')
+
     def idle(self, timeout=29*60):
         """
         Enters IDLE mode and yields lines sent from server.

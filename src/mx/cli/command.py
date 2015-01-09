@@ -98,8 +98,23 @@ class Interface(object):
     def import_mail(self):
         with imap.login(**self.imap_settings) as client:
             for index, uid, msg in client.fetch_unseen():
-                mail = message.parse(msg)
-                logger.info('New mail: %s', mail.subject)
+                try:
+                    mail = message.parse(msg)
+                    logger.info('New mail: %s', mail.subject)
+
+                    # TODO: Submit message to remote API
+                    # TODO: Delete if successfully submitted? CLI option --delete?
+
+                except Exception:
+                    logger.error('Failed to parse mail: %s', uid)
+                    # TODO: Create custom parse exception
+                    # TODO: Handle mail parse error. Move to other mailbox? Leave as seen?
+
+                except Exception:
+                    logger.error('Failed to import mail: %s', uid)
+                    client.mark_unseen(index)
+                    # TODO: Catch correct api exception
+                    # TODO: Handle failed api call, mark as unseen. Flag with try-count? Delete after X tries?
 
     @property
     def imap_settings(self):
