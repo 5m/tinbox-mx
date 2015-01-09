@@ -12,7 +12,7 @@ Options:
   -p --password <password>    IMAP account password
   --interval N                Check for new mail by polling every N seconds [default: 30]
   --subscribe                 Subscribe for new mail event instead of polling
-  --pid FILE                  Create pid file FILE [default: /tmp/mta.pid]
+  --pid FILE                  Create pid file FILE [default: /tmp/mx.pid]
   --logto FILE                Log output to FILE instead of console
   -v                          Enable verbose output
   --version                   Show version
