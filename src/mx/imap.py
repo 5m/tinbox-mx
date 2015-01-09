@@ -55,18 +55,15 @@ class IMAP(imaplib.IMAP4_SSL):
 
         :param touch: Flag found messages as seen
         """
-        with self.mailbox(mailbox, readonly=(not touch)):  # TODO: Change to readonly if
+        with self.mailbox(mailbox, readonly=(not touch)):
             criteria = '(UNSEEN)'
             logger.debug('IMAP: search %s', criteria)
             _, (result,) = self.search(None, criteria)
 
             if result:
-                indices = b','.join(result.split())  # Format: 2,10:12,15 means 2,10,11,12,15
+                indices = b','.join(result.split())  # Message sequence number formatted
                 logger.debug('IMAP: fetch messages [%s]', indices.decode())
-                _, data = self.fetch(indices, '(UID RFC822)')  # TODO: Try .PEEK (not working with gmail)
-
-                # if not touch:
-                #     self.store(indices, '-FLAGS.SILENT', '\\Seen')  # TODO: Only needed due to .PEEK not working)
+                _, data = self.fetch(indices, '(UID RFC822)')
 
                 for _type, RFC822 in data[::2]:
                     match = re.match(r'(?P<index>\d+) \(UID (?P<uid>\d+).*', _type.decode())
