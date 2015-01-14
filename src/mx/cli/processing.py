@@ -5,29 +5,52 @@ from multiprocessing import Process
 log = logging.getLogger(__name__)
 
 
-class spawnable(object):
+def spawnable(func=None, debug=False):
     """
-    Attach .spawn() helper to decorated function.
-    Spawns a sub process of original when called.
+    Decorator to make a method a blind-firing asynchronous subprocess.
+    Spawns a subprocess of original when called.
 
-    @spawnable
-    def foobar():
-        pass
+    >>> import time
 
-    foobar.spawn()
+    >>> @spawnable
+    >>> def foobar():
+    ...     time.sleep(1)
+    ...     print("World!")
+    >>> foobar.spawn()  # Executes the method in a new subprocess
+    >>> print("Hello")
+    Hello
+    World!
+
+    or, if you want to disable subprocess spawning and run the function
+    in-line for debugging purposes:
+
+    >>> @spawnable(debug=True)
+    >>> def foobar():
+    ...     time.sleep(1)
+    ...     print("World!")
+    >>> foobar.spawn()  # Executes the method in-line
+    >>> print("Hello")
+    World!
+    Hello
     """
 
-    def __init__(self, func):
-        self.func = func
+    def inner(inner_func):
+        def spawn(*args, **kwargs):
+            log.debug('Spawn process [%s]', inner_func.__name__)
+            args = args
 
-    def __get__(self, instance, klass):
-        self.instance = instance
-        func = partial(self.func, instance)
-        setattr(func, 'spawn', self.__spawn__)
-        return func
+            if debug:
+                log.warning('debug is set, running inline')
+                return inner_func(*args, **kwargs)
 
-    def __spawn__(self, *args, **kwargs):
-        log.debug('Spawn process [%s]', self.func.__name__)
-        args = (self.instance,) + args
-        p = Process(target=self.func, args=args, kwargs=kwargs)
-        p.start()
+            p = Process(target=inner_func, args=args, kwargs=kwargs)
+            p.start()
+
+        setattr(inner_func, 'spawn', spawn)
+
+        return inner_func
+
+    if func is None:
+        return inner
+
+    return inner(func)

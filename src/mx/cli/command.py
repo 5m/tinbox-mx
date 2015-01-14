@@ -19,6 +19,7 @@ Options:
   -? --help                   Show this screen
 
 """
+import json
 import logging
 import logging.config
 import os
@@ -30,6 +31,7 @@ from time import sleep
 from . import log
 from .processing import spawnable
 from .. import __version__, imap, message
+from ..stores.trak import insert
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +73,8 @@ class Interface(object):
                 if self.opts['--subscribe']:
                     # MODE: Subscribe
                     with imap.login(**self.imap_settings) as subscriber:
-                        subscriber.subscribe(self.import_mail.spawn)  # Blocks with callback
+                        # Blocks with callback
+                        subscriber.subscribe(self.import_mail.spawn)
                 else:
                     # MODE: Polling
                     self.import_mail()
@@ -102,19 +105,25 @@ class Interface(object):
                     mail = message.parse(msg)
                     logger.info('New mail: %s', mail.subject)
 
+                    # Insert mail into trak
+                    insert(mail)
+
                     # TODO: Submit message to remote API
-                    # TODO: Delete if successfully submitted? CLI option --delete?
+                    # TODO: Delete if successfully submitted?
+                    #       CLI option --delete?
 
                 except Exception:
                     logger.error('Failed to parse mail: %s', uid)
                     # TODO: Create custom parse exception
-                    # TODO: Handle mail parse error. Move to other mailbox? Leave as seen?
+                    # TODO: Handle mail parse error. Move to other mailbox?
+                    #       eave as seen?
 
                 except Exception:
                     logger.error('Failed to import mail: %s', uid)
                     client.mark_unseen(index)
                     # TODO: Catch correct api exception
-                    # TODO: Handle failed api call, mark as unseen. Flag with try-count? Delete after X tries?
+                    # TODO: Handle failed api call, mark as unseen. Flag with
+                    #       try-count? Delete after X tries?
 
     @property
     def imap_settings(self):
