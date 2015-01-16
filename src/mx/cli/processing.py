@@ -5,7 +5,7 @@ from multiprocessing import Process
 log = logging.getLogger(__name__)
 
 
-def spawnable(func=None, debug=False):
+def spawnable(outer_func=None, debug=False):
     """
     Decorator to make a method a blind-firing asynchronous subprocess.
     Spawns a subprocess of original when called.
@@ -34,23 +34,32 @@ def spawnable(func=None, debug=False):
     Hello
     """
 
-    def inner(inner_func):
-        def spawn(*args, **kwargs):
-            log.debug('Spawn process [%s]', inner_func.__name__)
+    class Inner:
+        def __init__(self, func):
+            self.func = func
+
+        def spawn(self, *args, **kwargs):
+            log.debug('Spawn process [%s]', self.func.__name__)
             args = args
 
             if debug:
                 log.warning('debug is set, running inline')
-                return inner_func(*args, **kwargs)
+                return self.func(*args, **kwargs)
 
-            p = Process(target=inner_func, args=args, kwargs=kwargs)
+            p = Process(target=self.func,
+                        args=(self.instance,) + args,
+                        kwargs=kwargs)
             p.start()
 
-        setattr(inner_func, 'spawn', spawn)
+        def __get__(self, instance, klass):
+            self.instance = instance
 
-        return inner_func
+            func = partial(self.func, instance)
+            setattr(func, 'spawn', self.spawn)
 
-    if func is None:
-        return inner
+            return func
 
-    return inner(func)
+    if outer_func is None:
+        return Inner
+
+    return Inner(outer_func)
