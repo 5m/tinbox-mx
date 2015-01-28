@@ -8,9 +8,11 @@ trak = Trak()
 
 def insert(mail):
     try:
-        from_address = mail.get_envelope()['from']
+        envelope = mail.get_envelope()
+        email, name = envelope['from']
 
-        trak.create_ticket(from_address, mail.subject, mail.get_body_content())
+        trak.create_ticket(email, mail.subject, mail.get_body_content(),
+                           sender_name=name)
     except Exception:
         _log.exception('Could not insert into trak.')
         raise

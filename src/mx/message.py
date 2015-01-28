@@ -80,12 +80,16 @@ class MIMEMessage(MIMEPart):
                     # Probably UnstructuredHeader, cast to Address
                     addresses += (Address(addr_spec=value),)
 
-        return addresses
+        return tuple((address.addr_spec, address.display_name)
+                     for address in addresses)
 
     def get_envelope(self):
+        # TODO: Do something with the "sender" header, as it may provide
+        # additional information.
         return {
-            'from': self.get_addresses('from', 'sender'),
+            'from': self.get_addresses('from')[0],
             'to': self.get_addresses('to', 'delivered-to'),
+            'cc': self.get_addresses('cc', 'bcc')
         }
 
     def get_body_content(self, *preference):
@@ -107,4 +111,5 @@ class MIMEMessage(MIMEPart):
         disposition = self.content_disposition
         filename = self.get_filename()
 
-        return Attachment(content_id, content_type, encoding, disposition, filename, self.get_content())
+        return Attachment(content_id, content_type, encoding, disposition,
+                          filename, self.get_content())
