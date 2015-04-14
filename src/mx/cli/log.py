@@ -30,7 +30,7 @@ def configure(filename, verbose):
                           ' %(levelname) 8s >> %(message)s'
             },
             'colorized': {
-                '()': 'socker.cli.log.ColorizedFormatter',
+                '()': 'mx.cli.log.ColorizedFormatter',
                 'fmt': '%(asctime)s [%(process)d] %(name) 20s'
                        ' %(levelname) 8s >> %(message)s'
             }
