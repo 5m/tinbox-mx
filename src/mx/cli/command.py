@@ -32,6 +32,7 @@ from . import log
 from .processing import spawnable
 from .. import __version__, imap, message
 from ..stores.trak import insert
+from ..stores.errors import BackendError
 
 logger = logging.getLogger(__name__)
 
@@ -112,18 +113,18 @@ class Interface(object):
                     # TODO: Delete if successfully submitted?
                     #       CLI option --delete?
 
-                except Exception:
-                    logger.error('Failed to parse mail: %s', uid)
-                    # TODO: Create custom parse exception
-                    # TODO: Handle mail parse error. Move to other mailbox?
-                    #       eave as seen?
-
-                except Exception:
+                except BackendError:
                     logger.error('Failed to import mail: %s', uid)
                     client.mark_unseen(index)
                     # TODO: Catch correct api exception
                     # TODO: Handle failed api call, mark as unseen. Flag with
                     #       try-count? Delete after X tries?
+
+                except Exception:
+                    logger.error('Failed to parse mail: %s', uid)
+                    # TODO: Create custom parse exception
+                    # TODO: Handle mail parse error. Move to other mailbox?
+                    #       eave as seen?
 
     @property
     def imap_settings(self):
