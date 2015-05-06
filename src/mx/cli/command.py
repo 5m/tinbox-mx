@@ -156,9 +156,11 @@ class Interface(object):
                 signal.SIGHUP, signal.SIGINT, signal.SIGTERM,    # Handled by us
                 signal.SIG_DFL, signal.SIGKILL, signal.SIGSTOP   # Non-catchable
             )
-            signals = (s for s in dir(signal) if s.startswith('SIG'))
-            signals = {s for s in map(lambda n: getattr(signal, n), signals)}
-            signals = filter(lambda s: s not in exclude_signals, signals)
+
+            signals = (getattr(signal, s)
+                       for s in dir(signal)
+                       if s.startswith('SIG') and s not in exclude_signals)
+
             print_signal = lambda s, f: logger.warn('*** GOT SIGNAL %s ***', s)
 
             for signum in signals:
