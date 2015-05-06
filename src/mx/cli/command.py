@@ -63,6 +63,10 @@ class Interface(object):
         # Ensure credential options, prompt missing
         self.ensure_credentials()
 
+        # Default exit code, more can be added with set_exit_code,
+        # the largest one is picked when calling exit()
+        self._exit_codes = [0]
+
         # Start command loop
         try:
             self.run()
@@ -188,9 +192,16 @@ class Interface(object):
         if not self.opts['--password']:
             self.opts['--password'] = getpass()
 
+    def set_exit_code(self, exit_code):
+        self._exit_codes.append(exit_code)
+
+    def get_exit_code(self):
+        return max(self._exit_codes)
+
     def sighup_handler(self):
         logger.warn('--- SIGHUP ---')
-        self.safe_quit()  # Rely on process manager (e.g. supervisor) to restart
+        # Rely on process manager (e.g. supervisor) to restart
+        self.safe_quit(exit_code=1)  # nonzero exit code makes supervisor reload
 
     def sigint_handler(self):
         logger.warn('--- SIGINT ---')
@@ -200,13 +211,15 @@ class Interface(object):
         logger.warn('--- SIGTERM ---')
         self.safe_quit()
 
-    def safe_quit(self):
+    def safe_quit(self, exit_code=None):
+        if exit_code is not None:
+            self.set_exit_code(exit_code)
         self._quit = True
 
     def quit(self):
         self.delete_pidfile()
         logger.info('Bye!')
-        exit()
+        exit(self.get_exit_code())
 
 
 if __name__ == '__main__':
