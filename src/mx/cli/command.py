@@ -19,20 +19,23 @@ Options:
   -? --help                   Show this screen
 
 """
-import json
+import os
+import sys
 import logging
 import logging.config
-import os
 import signal
-from docopt import docopt
-from getpass import getpass
-from time import sleep
 
-from . import log
-from .processing import spawnable
+from time import sleep
+from getpass import getpass
+
+from docopt import docopt
+
 from .. import __version__, imap, message
 from ..stores.trak import insert
 from ..stores.errors import BackendError
+
+from . import log
+from .processing import spawnable
 
 logger = logging.getLogger(__name__)
 
@@ -141,13 +144,16 @@ class Interface(object):
         log.configure(filename, verbose)
 
     def register_signals(self, catch_all=True):
-        signal.signal(signal.SIGHUP, lambda *args: self.reload())  # 1; Reload
-        signal.signal(signal.SIGINT, lambda *args: self.abort())   # 2; Interrupt, ctrl-c
-        signal.signal(signal.SIGTERM, lambda *args: self.stop())   # 15; Stop
+        # 1; Reload
+        signal.signal(signal.SIGHUP, lambda *args: self.sighup_handler())
+        # 2; Interrupt, ctrl-c
+        signal.signal(signal.SIGINT, lambda *args: self.sigint_handler())
+        # 15; Stop
+        signal.signal(signal.SIGTERM, lambda *args: self.sigterm_handler())
 
         if catch_all:
             exclude_signals = (
-                signal.SIGHUP, signal.SIGINT, signal.SIGTERM,    # Our dispatched
+                signal.SIGHUP, signal.SIGINT, signal.SIGTERM,    # Handled by us
                 signal.SIG_DFL, signal.SIGKILL, signal.SIGSTOP   # Non-catchable
             )
             signals = (s for s in dir(signal) if s.startswith('SIG'))
@@ -180,14 +186,15 @@ class Interface(object):
         if not self.opts['--password']:
             self.opts['--password'] = getpass()
 
-    def reload(self):
+    def sighup_handler(self):
         logger.warn('--- SIGHUP ---')
+        self.safe_quit()  # Rely on process manager (e.g. supervisor) to restart
 
-    def abort(self):
+    def sigint_handler(self):
         logger.warn('--- SIGINT ---')
         self.safe_quit()
 
-    def stop(self):
+    def sigterm_handler(self):
         logger.warn('--- SIGTERM ---')
         self.safe_quit()
 
