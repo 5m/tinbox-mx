@@ -24,8 +24,8 @@ setup(
         ]
     },
     dependency_links=[
-        'git+ssh://git@github.com/5m/trak-client.git@master'
-        '#egg=trak-client-0.1b3'
+        ('git+ssh://git@github.com/5m/trak-client.git@master'
+         '#egg=trak-client-0.1b4')
     ],
     install_requires=[
         'trak-client==0.1b3',
