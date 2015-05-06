@@ -24,11 +24,11 @@ setup(
         ]
     },
     dependency_links=[
-        ('git+ssh://git@github.com/5m/trak-client.git@master'
-         '#egg=trak-client-0.1b4')
+        ('git+ssh://git@github.com/5m/trak-client.git@0.1b5'
+         '#egg=trak-client-0.1b5')
     ],
     install_requires=[
-        'trak-client==0.1b3',
+        'trak-client==0.1b5',
         'chardet>=2.3.0',
         'docopt>=0.6.2'
     ]
