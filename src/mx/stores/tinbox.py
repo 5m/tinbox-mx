@@ -1,13 +1,13 @@
 import re
 import logging
 
-from trak_client import Trak
+from tinbox_client import Tinbox
 
 from .errors import BackendError
 
 _log = logging.getLogger(__name__)
 
-trak = Trak()
+tinbox = Tinbox()
 
 
 def insert(mail):
@@ -23,9 +23,9 @@ def insert(mail):
                                  body_content):
             uuids.append(match.group(0))
 
-        trak.create_ticket(email, mail.subject, mail.get_body_content(),
-                           sender_name=name,
-                           context=uuids or None)
+        tinbox.create_ticket(email, mail.subject, mail.get_body_content(),
+                             sender_name=name,
+                             context=uuids or None)
 
     except Exception as e:
         _log.exception('Could not insert into trak.')
