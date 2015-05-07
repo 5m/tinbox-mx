@@ -31,7 +31,7 @@ from getpass import getpass
 from docopt import docopt
 
 from .. import __version__, imap, message
-from ..stores.trak import insert
+from ..stores.tinbox import insert
 from ..stores.errors import BackendError
 
 from . import log
@@ -113,7 +113,7 @@ class Interface(object):
                     mail = message.parse(msg)
                     logger.info('New mail: %s', mail.subject)
 
-                    # Insert mail into trak
+                    # Insert mail into tinbox
                     insert(mail)
 
                     # TODO: Submit message to remote API
