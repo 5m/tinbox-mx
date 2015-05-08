@@ -2,7 +2,8 @@
 import sys
 
 from os import path
-from functools import partial
+
+from pkg_resources import parse_requirements
 
 from setuptools import setup, find_packages
 
@@ -43,6 +44,10 @@ def get_version() -> "version string":
     return version['get_version']()
 
 
+def get_requirements(filename):
+    return [str(r) for r in parse_requirements(open(filename).read())]
+
+
 setup(
     name=name,
     version=get_version(),
@@ -57,9 +62,5 @@ setup(
             'mx = mx.cli.command:Interface',
         ]
     },
-    install_requires=[
-        'tinbox-client==1.0a1',
-        'chardet>=2.3.0',
-        'docopt>=0.6.2'
-    ]
+    install_requires=get_requirements('requirements.txt')
 )

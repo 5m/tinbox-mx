@@ -1,5 +1,3 @@
-# Trak migrations
-/src/**/migrations/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -58,3 +56,6 @@ docs/_build/
 
 # OSX
 .DS_Store
+
+# tinbox-client settings
+*settings.json
