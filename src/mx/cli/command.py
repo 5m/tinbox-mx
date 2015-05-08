@@ -53,6 +53,13 @@ class Interface(object):
         self.setup_logging()
         logger.info('Start mx...')
 
+        # Main loop condition
+        self._running = False
+
+        # Default exit code, more can be added with set_exit_code,
+        # the largest one is picked when calling exit()
+        self._exit_codes = [0]
+
         # Listen to OS signals
         self.register_signals(catch_all=False)
 
@@ -63,10 +70,6 @@ class Interface(object):
         # Ensure credential options, prompt missing
         self.ensure_credentials()
 
-        # Default exit code, more can be added with set_exit_code,
-        # the largest one is picked when calling exit()
-        self._exit_codes = [0]
-
         # Start command loop
         try:
             self.run()
@@ -76,7 +79,9 @@ class Interface(object):
             self.quit()
 
     def run(self):
-        while not self._quit:
+        self._running = True
+
+        while self._running:
             try:
                 if self.opts['--subscribe']:
                     # MODE: Subscribe
@@ -86,10 +91,13 @@ class Interface(object):
                 else:
                     # MODE: Polling
                     self.import_mail()
-                    if not self._quit:
-                        interval = self.opts['--interval']
-                        logger.debug('Sleep for %s seconds...', interval)
-                        sleep(float(interval))
+
+                    if not self._running:
+                        continue  # Check for shutdown signal before sleep
+
+                    interval = self.opts['--interval']
+                    logger.debug('Sleep for %s seconds...', interval)
+                    sleep(float(interval))
 
             except ConnectionError as e:
                 logger.critical('Connection error: %s', e)
@@ -214,7 +222,13 @@ class Interface(object):
     def safe_quit(self, exit_code=None):
         if exit_code is not None:
             self.set_exit_code(exit_code)
-        self._quit = True
+
+        if not self._running:
+            logger.warn('Shutting down forcibly.')
+            self.quit()
+
+        logger.info('Shutting down gracefully,')
+        self._running = False
 
     def quit(self):
         self.delete_pidfile()
