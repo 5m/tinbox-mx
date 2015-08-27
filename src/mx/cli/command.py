@@ -31,7 +31,6 @@ from getpass import getpass
 from docopt import docopt
 
 from .. import __version__, imap, message
-from ..stores.tinbox import insert
 from ..stores.errors import BackendError
 
 from . import log
@@ -122,6 +121,7 @@ class Interface(object):
                     logger.info('New mail: %s', mail.subject)
 
                     # Insert mail into tinbox
+                    from ..stores.tinbox import insert
                     insert(mail)
 
                     # TODO: Submit message to remote API
