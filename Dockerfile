@@ -1,4 +1,5 @@
-FROM 5m/python:3.4-pycharm-onbuild
+FROM python:3.4-onbuild
 
-# TODO: Move to docker-compose
-CMD ["python", "-m", "mx.cli.command", "import", "-v", "--subscribe"]
+RUN python setup.py develop
+
+ENTRYPOINT ["mx"]
