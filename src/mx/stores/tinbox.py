@@ -34,5 +34,5 @@ def insert(mail):
             tinbox.upload_attachment(attachment_pk, attachment.data)
 
     except Exception as e:
-        _log.exception('Could not insert into trak.')
+        _log.exception('Could not insert into tinbox.')
         raise BackendError(e)

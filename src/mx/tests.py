@@ -14,7 +14,7 @@ EMAILS = (
 
 class MTATest(TestCase):
 
-    def x_test_parse(self):
+    def _test_parse(self):
         for n, raw_message in enumerate(EMAILS, start=1):
             print('--- MAIL #{} ---'.format(n))
 
@@ -28,12 +28,12 @@ class MTATest(TestCase):
             for a in mail.get_attachments():
                 print('Attachment:', a)
 
-    def x_test_imap(self):
-        with imap.login(host='imap.gmail.com', username='trak@5monkeys.se', password='traktrak') as client:
+    def _test_imap(self):
+        with imap.login(host='imap.gmail.com', username='foo@example.com', password='bar') as client:
             for m in client.fetch():
                 print(m.subject)
 
-    def test_cli(self):
-        sys.argv = 'cli import -u trak@5monkeys.se -p traktrak'.split()
+    def _test_cli(self):
+        sys.argv = 'cli import -u foo@example.com -p bar'.split()
         from mx.cli.command import Interface
         Interface()
